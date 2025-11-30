@@ -3,10 +3,10 @@ import sqlite3
 from ptest import *
 
 def main():
-    #file = input("Enter the CSV file name: ") + ".db"
-    file = "big_test.csv"
-    #dbname = input("Enter the DB name: ") + ".db"
-    dbname = "test.db"
+    file = input("Enter the CSV file name: ") + ".csv"
+    # file = "big_test.csv"                 TEST INPUT
+    dbname = input("Enter the DB name: ") + ".db"
+    # dbname = "test.db"                    TEST INPUT
     fields, data = processcsv(file)
     createtable(file, dbname, fields, data)
 
