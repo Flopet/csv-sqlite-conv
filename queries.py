@@ -38,11 +38,9 @@ class NewDB:
                 for cell in row:
                     values += f"'{row[cell]}', "
                 values = values[:-2]
-                if not table.rowcheck(values):
-                    self.cursor.execute(f"INSERT INTO {table.name} VALUES ({values});")
-                    print(f"Added row: {values}")
-                else:
-                    continue
+
+                self.cursor.execute(f"INSERT OR IGNORE INTO {table.name} VALUES ({values});")
+        print(f"Appended data from {table.csv} to DB table '{table.name}'.")
         self.commit()
 
     ##################################################
@@ -51,7 +49,7 @@ class NewDB:
     def commit(self):
         try:
             self.db.commit()
-            print(f"--- Committed changes to database {self.name}.")
+            print(f"- Committed changes to database {self.name}.")
         except sqlite3.Error as e:
             print(f"Error committing changes to the database: {e}")
 
@@ -77,29 +75,26 @@ class NewTable:
         with open(self.csv) as csvfile:
             csvreader = csv.DictReader(csvfile)
             fields = csvreader.fieldnames
+            ptest(fields, "CSV Fields")
             self.columns = ", ".join(fields)
+            columns_with_types = ""
+            for field in fields:
+                column_type = input(f"Enter the data type for {field}: ")
+                columns_with_types += f"{field} {column_type},"
+            ptest(columns_with_types, "Columns with Types")
+
 
         ##################################################
         #   Generate a tablename based on the CSV filename and
         #   create a new table in the database with the fields
         #   specified in the CSV file.
         ##################################################
-        cursor.execute(f"CREATE TABLE IF NOT EXISTS {self.name} ({self.columns});")
+        # Require unique data for each row to avoid duplicates
+        ptest(f"CREATE TABLE IF NOT EXISTS {self.name} ({columns_with_types} UNIQUE({self.columns}));", "SQL Query")
+        cursor.execute(f"CREATE TABLE IF NOT EXISTS {self.name} ({columns_with_types} UNIQUE({self.columns}));")
+
         print(f"Created table {self.name} in database {db.name}.")
         db.commit()
-
-    ##################################################
-    #   Check the table for a duplicate row based on the
-    #   specified values.
-    ##################################################
-    def rowcheck(self, values):
-        cursor = self.db.cursor
-        check = cursor.execute(f"SELECT * FROM {self.name} WHERE ({self.columns}) = ({values});")
-
-        if check.fetchone() is None:
-            return False
-        else:
-            return True
 
 
 
