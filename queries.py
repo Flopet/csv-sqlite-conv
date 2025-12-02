@@ -1,5 +1,8 @@
 import csv
 import sqlite3
+
+from pandas.io.sql import table_exists
+
 from ptest import *
 
 
@@ -67,6 +70,9 @@ class NewTable:
         self.name = csvfile.split('.')[0]
         cursor = db.cursor
 
+        table_exists = cursor.execute(f".tables").fetchone()
+        ptest(table_exists, "Table Exists")
+
         ##################################################
         #   Get the field names from the CSV file and return
         #   them as a comma-separated string to be used in
@@ -78,10 +84,15 @@ class NewTable:
             ptest(fields, "CSV Fields")
             self.columns = ", ".join(fields)
             columns_with_types = ""
+
+            # Ask user for data types for each field
             for field in fields:
-                column_type = input(f"Enter the data type for {field}: ")
-                columns_with_types += f"{field} {column_type},"
-            ptest(columns_with_types, "Columns with Types")
+                column_type = input(f"Enter the data type for {field}: ").upper()
+                acceptable_types = ["TEXT", "INTEGER", "REAL"]
+                while column_type not in acceptable_types:
+                    print(f"Invalid data type '{column_type}'. Please enter one of the following: {acceptable_types}")
+                    column_type = input(f"Enter the data type for {field}: ").upper()
+                columns_with_types += f"{field} {column_type}, "
 
 
         ##################################################
@@ -90,8 +101,15 @@ class NewTable:
         #   specified in the CSV file.
         ##################################################
         # Require unique data for each row to avoid duplicates
-        ptest(f"CREATE TABLE IF NOT EXISTS {self.name} ({columns_with_types} UNIQUE({self.columns}));", "SQL Query")
-        cursor.execute(f"CREATE TABLE IF NOT EXISTS {self.name} ({columns_with_types} UNIQUE({self.columns}));")
+        query = f"CREATE TABLE IF NOT EXISTS {self.name} ({columns_with_types}UNIQUE({self.columns}));"
+
+        # Ask user if column types should be strictly enforced or not
+        options = ["y", "n"]
+        strict = input("Do you want to enforce strict data types? (y/n): ").lower()
+        if strict == options[0]:
+            query = query[:-1] + " STRICT" + query[-1:]
+
+        cursor.execute(query)
 
         print(f"Created table {self.name} in database {db.name}.")
         db.commit()
