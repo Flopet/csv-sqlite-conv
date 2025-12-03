@@ -1,8 +1,6 @@
 import csv
 import sqlite3
 
-from pandas.io.sql import table_exists
-
 from ptest import *
 
 
@@ -32,7 +30,9 @@ class NewDB:
         #Create cursor object
         self.cursor = self.db.cursor()
 
-
+    ##################################################
+    #   Append data from a CSV file to a table in the DB
+    ##################################################
     def appenddata(self, table):
         with open(table.csv) as csvfile:
             csvreader = csv.DictReader(csvfile)
@@ -70,9 +70,6 @@ class NewTable:
         self.name = csvfile.split('.')[0]
         cursor = db.cursor
 
-        table_exists = cursor.execute(f".tables").fetchone()
-        ptest(table_exists, "Table Exists")
-
         ##################################################
         #   Get the field names from the CSV file and return
         #   them as a comma-separated string to be used in
@@ -93,14 +90,29 @@ class NewTable:
                     print(f"Invalid data type '{column_type}'. Please enter one of the following: {acceptable_types}")
                     column_type = input(f"Enter the data type for {field}: ").upper()
                 columns_with_types += f"{field} {column_type}, "
-
+        query = f"CREATE TABLE IF NOT EXISTS {self.name} ({columns_with_types}UNIQUE({self.columns}));"
 
         ##################################################
         #   Generate a tablename based on the CSV filename and
         #   create a new table in the database with the fields
         #   specified in the CSV file.
         ##################################################
-        # Require unique data for each row to avoid duplicates
+        # Check if table already exists in database
+        table_list = cursor.execute(f"SELECT name FROM sqlite_master WHERE type='table';").fetchone()
+        if table_list is not None:
+            if self.name in table_list:
+                ask = input(f"Table {self.name} already exists. Would you like to add to existing table? (y/n)").lower()
+                while ask != "y" and ask != "n":
+                    ask = input(f"Invalid input. Please enter 'y' or 'n'.").lower()
+                if ask == "y":
+                    cursor.execute(f"DROP TABLE {self.name};")
+                elif ask == "n":
+                    # If the table already exists and the user doesnt want
+                    # to overwrite the current, ask user for a new table name.
+                    new_name = input(f"What would you like to name this new table (lowercase with underscores)? ")
+                    self.name = new_name
+
+        # UNIQUE(col1, col2, col3, ...) Restricts the table to contain unique rows
         query = f"CREATE TABLE IF NOT EXISTS {self.name} ({columns_with_types}UNIQUE({self.columns}));"
 
         # Ask user if column types should be strictly enforced or not
@@ -108,7 +120,6 @@ class NewTable:
         strict = input("Do you want to enforce strict data types? (y/n): ").lower()
         if strict == options[0]:
             query = query[:-1] + " STRICT" + query[-1:]
-
         cursor.execute(query)
 
         print(f"Created table {self.name} in database {db.name}.")
