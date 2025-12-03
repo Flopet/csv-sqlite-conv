@@ -22,5 +22,7 @@ def dbtest(db, table):
     | table.csvfile = {table.csv}
     | table.tablename = {table.name}
     | table.columns = {table.columns}
+    |____________________________
     |
+    | tables available in db: {db.cursor.execute("SELECT name FROM sqlite_master WHERE type='table';").fetchall()}
         """)
