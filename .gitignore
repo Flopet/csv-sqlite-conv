@@ -1,5 +1,4 @@
 *.db
 *.csv
-!test.csv
 __pycache__/*
 .DS_Store
