@@ -1,16 +1,12 @@
-import csv
-import sqlite3
 from ptest import *
-from queries import *
+from NewDB import NewDB
+from NewTable import NewTable
 
 def main():
-    file = input("Enter the CSV file name: ") + ".csv"
-    #file = "test.csv"                 #TEST INPUT
     dbname = input("Enter the DB name: ") + ".db"
-    #dbname = "test.db"                    #TEST INPUT
 
     db = NewDB(dbname)
-    table = NewTable(db, file)
+    table = NewTable(db)
     db.appenddata(table)
     db.close()
 
